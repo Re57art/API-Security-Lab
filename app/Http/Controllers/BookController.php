@@ -2,12 +2,33 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\BookRequest;
 use App\Models\Book;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class BookController extends Controller
 {
+    public function showByUser($id)
+    {
+        $user = User::find($id);
+
+        if (!$user) {
+            return response()->json(['error' => 'User not found'], 404);
+        }
+
+        return response()->json([
+            'data' => $user->books,
+            'links' => [
+                'self' => [
+                    'href' => url("/api/users/{$id}/books"),
+                    'method' => 'GET',
+                ],
+            ],
+        ]);
+    }
+
     public function index()
     {
         $books = Book::all();
@@ -62,11 +83,9 @@ class BookController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(BookRequest $request)
     {
-        // UNSECURE
-        // Missing Validation
-        $book = Book::create($request->all());
+        $book = $request->user()->books()->create($request->validated());
 
         return response()->json([
             'data' => $book,
